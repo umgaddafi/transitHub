@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TransitHub | AI-Powered Smart Bus Ticketing</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#0d9488',
+              600: '#0f766e',
+              700: '#115e59',
+              900: '#134e4a',
+            },
+            accent: '#f59e0b',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .seat {
+      transition: all 0.2s ease-in-out;
+    }
+    .seat:hover:not(.booked) {
+      transform: scale(1.08);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <header class="sticky top-0 z-40 glass-nav border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="w-11 h-11 bg-gradient-to-tr from-brand-700 to-teal-400 rounded-xl flex items-center justify-center text-white shadow-lg shadow-teal-500/20 group-hover:scale-105 transition-transform">
+          <i class="fa-solid fa-bus-simple text-xl"></i>
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight text-slate-900 block leading-tight">Transit<span class="text-teal-600">Hub</span></span>
+          <span class="text-[10px] uppercase tracking-widest font-semibold text-slate-400">AI-Smart Mobility</span>
+        </div>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
+        <a href="#" class="text-teal-600 hover:text-teal-700 transition-colors">Home</a>
+        <a href="#routes" class="hover:text-teal-600 transition-colors">Routes & Schedules</a>
+        <a href="#ai-insights" class="hover:text-teal-600 flex items-center gap-1.5 transition-colors">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> AI Predictor
+        </a>
+        <a href="#" class="hover:text-teal-600 transition-colors">Manage Booking</a>
+        <a href="#" class="hover:text-teal-600 transition-colors">Help</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <button onclick="toggleAiDrawer()" class="hidden sm:flex items-center gap-2 text-xs font-bold uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200 px-3.5 py-2 rounded-full hover:bg-teal-100 transition-colors">
+          <i class="fa-solid fa-robot text-teal-600"></i> AI Assist
+        </button>
+        <button class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+          <i class="fa-regular fa-user text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <section class="relative bg-gradient-to-b from-teal-900 via-teal-800 to-slate-900 text-white pt-14 pb-28 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
+
+    <div class="max-w-5xl mx-auto relative z-10 text-center">
+      <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-1.5 rounded-full text-xs font-medium text-teal-200 mb-6 shadow-inner">
+        <i class="fa-solid fa-sparkles text-amber-400"></i> Next-Gen Neural Transit Routing v2.4
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-4 leading-tight">
+        Travel Smarter. Book Faster with <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-amber-300">AI Intelligence.</span>
+      </h1>
+      <p class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto mb-10">
+        Dynamic route pricing, real-time demand predictions, and instant seat confirmation.
+      </p>
+
+      <div class="bg-white text-slate-800 rounded-2xl shadow-2xl p-4 sm:p-6 border border-slate-100 max-w-4xl mx-auto">
+        <form id="search-form" onsubmit="handleSearch(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <div class="text-left">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              <i class="fa-solid fa-location-dot text-teal-600 mr-1"></i> Origin
+            </label>
+            <select id="origin" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none transition">
+              <option value="Lagos">Lagos (Jibowu / Ojota)</option>
+              <option value="Abuja">Abuja (Utako Terminus)</option>
+              <option value="Port Harcourt">Port Harcourt</option>
+              <option value="Benin City">Benin City</option>
+            </select>
+          </div>
+
+          <div class="text-left">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              <i class="fa-solid fa-map-pin text-amber-500 mr-1"></i> Destination
+            </label>
+            <select id="destination" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none transition">
+              <option value="Abuja">Abuja (Utako Terminus)</option>
+              <option value="Lagos">Lagos (Jibowu)</option>
+              <option value="Port Harcourt">Port Harcourt</option>
+              <option value="Kano">Kano</option>
+            </select>
+          </div>
+
+          <div class="text-left">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              <i class="fa-solid fa-calendar-day text-teal-600 mr-1"></i> Travel Date
+            </label>
+            <input type="date" id="travel-date" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none transition" />
+          </div>
+
+          <div class="flex items-end">
+            <button type="submit" class="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-teal-700/30 flex items-center justify-center gap-2 text-sm transition transform active:scale-95">
+              <i class="fa-solid fa-magnifying-glass"></i> Find AI Tickets
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+  <div id="ai-insights" class="max-w-5xl mx-auto -mt-10 relative z-20 px-4 w-full">
+    <div class="bg-slate-900 text-slate-100 rounded-xl p-4 shadow-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-brain"></i>
+        </div>
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-teal-400 block">AI Route Engine Prediction</span>
+          <p class="text-xs text-slate-300">Fare trends are currently <strong class="text-emerald-400">Stable</strong>. Booking today saves ~18% compared to weekend rush.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 96% On-Time Reliability
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 flex-grow w-full">
+    
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-slate-200 gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight" id="results-title">Available Scheduled Buses</h2>
+        <p class="text-sm text-slate-500">Showing optimized departures for <span class="font-semibold text-teal-700" id="route-indicator">Lagos → Abuja</span></p>
+      </div>
+
+      <div class="flex items-center gap-2 self-end md:self-auto">
+        <button class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition">
+          <i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Lowest Price
+        </button>
+        <button class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-teal-50 border border-teal-200 text-teal-800 transition">
+          <i class="fa-solid fa-bolt mr-1 text-amber-500"></i> AI Recommended
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8" id="bus-cards-container">
+
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between relative group">
+        <div class="absolute -top-3 left-5 bg-gradient-to-r from-teal-600 to-teal-700 text-white text-[10px] uppercase font-bold tracking-wider px-3 py-0.5 rounded-full shadow-md">
+          <i class="fa-solid fa-star text-amber-300 mr-1"></i> AI Best Value
+        </div>
+
+        <div>
+          <div class="flex justify-between items-start mt-2">
+            <div>
+              <h3 class="font-bold text-slate-900 text-base">Transit Cruiser Express</h3>
+              <span class="text-xs text-slate-400">Executive Luxury AC</span>
+            </div>
+            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">14 Seats Left</span>
+          </div>
+
+          <div class="flex items-center justify-between my-5 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div>
+              <p class="text-lg font-extrabold text-slate-900">06:30 AM</p>
+              <p class="text-[11px] font-medium text-slate-500">Lagos Park</p>
+            </div>
+            <div class="flex flex-col items-center px-2">
+              <span class="text-[10px] font-semibold text-slate-400 uppercase">9h 15m</span>
+              <div class="w-16 h-[2px] bg-slate-300 my-1 relative">
+                <i class="fa-solid fa-bus text-[10px] text-teal-600 absolute left-1/2 -top-1.5 -translate-x-1/2"></i>
+              </div>
+              <span class="text-[9px] text-emerald-600 font-bold">Direct Fast Track</span>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-extrabold text-slate-900">03:45 PM</p>
+              <p class="text-[11px] font-medium text-slate-500">Abuja Terminus</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 text-slate-400 text-xs py-1 border-t border-slate-100">
+            <span title="High-Speed Wi-Fi"><i class="fa-solid fa-wifi text-teal-600"></i> Wi-Fi</span>
+            <span title="Air Conditioned"><i class="fa-solid fa-snowflake text-teal-600"></i> AC</span>
+            <span title="USB Charging"><i class="fa-solid fa-plug text-teal-600"></i> USB Port</span>
+            <span title="Reclining Seats"><i class="fa-solid fa-couch text-teal-600"></i> Recliner</span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+          <div>
+            <span class="text-[11px] text-slate-400 uppercase block font-semibold">Standard Fare</span>
+            <span class="text-2xl font-black text-slate-900">₦22,500</span>
+          </div>
+          <button onclick="openSeatModal('Transit Cruiser Express (06:30 AM)', 22500)" class="bg-slate-900 hover:bg-teal-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition shadow-md">
+            Select Seats
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between relative group">
+        <div class="absolute -top-3 left-5 bg-amber-500 text-slate-900 text-[10px] uppercase font-black tracking-wider px-3 py-0.5 rounded-full shadow-md">
+          <i class="fa-solid fa-bolt mr-1"></i> AI Fastest
+        </div>
+
+        <div>
+          <div class="flex justify-between items-start mt-2">
+            <div>
+              <h3 class="font-bold text-slate-900 text-base">Jetliner Jet-Transit</h3>
+              <span class="text-xs text-slate-400">First-Class Sleeper Bus</span>
+            </div>
+            <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md">5 Seats Left</span>
+          </div>
+
+          <div class="flex items-center justify-between my-5 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div>
+              <p class="text-lg font-extrabold text-slate-900">08:00 AM</p>
+              <p class="text-[11px] font-medium text-slate-500">Lagos Park</p>
+            </div>
+            <div class="flex flex-col items-center px-2">
+              <span class="text-[10px] font-semibold text-slate-400 uppercase">8h 45m</span>
+              <div class="w-16 h-[2px] bg-slate-300 my-1 relative">
+                <i class="fa-solid fa-bus text-[10px] text-amber-500 absolute left-1/2 -top-1.5 -translate-x-1/2"></i>
+              </div>
+              <span class="text-[9px] text-amber-600 font-bold">Express Way</span>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-extrabold text-slate-900">04:45 PM</p>
+              <p class="text-[11px] font-medium text-slate-500">Abuja Terminus</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 text-slate-400 text-xs py-1 border-t border-slate-100">
+            <span title="High-Speed Wi-Fi"><i class="fa-solid fa-wifi text-teal-600"></i> Wi-Fi</span>
+            <span title="Snacks Included"><i class="fa-solid fa-cookie-bite text-teal-600"></i> Meal</span>
+            <span title="USB Charging"><i class="fa-solid fa-plug text-teal-600"></i> Power</span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+          <div>
+            <span class="text-[11px] text-slate-400 uppercase block font-semibold">Premium Fare</span>
+            <span class="text-2xl font-black text-slate-900">₦28,000</span>
+          </div>
+          <button onclick="openSeatModal('Jetliner Jet-Transit (08:00 AM)', 28000)" class="bg-slate-900 hover:bg-teal-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition shadow-md">
+            Select Seats
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 p-5 flex flex-col justify-between relative group">
+        <div>
+          <div class="flex justify-between items-start mt-2">
+            <div>
+              <h3 class="font-bold text-slate-900 text-base">Interstate Economy Shuttle</h3>
+              <span class="text-xs text-slate-400">Standard Hiace Bus</span>
+            </div>
+            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">8 Seats Left</span>
+          </div>
+
+          <div class="flex items-center justify-between my-5 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div>
+              <p class="text-lg font-extrabold text-slate-900">10:30 AM</p>
+              <p class="text-[11px] font-medium text-slate-500">Lagos Park</p>
+            </div>
+            <div class="flex flex-col items-center px-2">
+              <span class="text-[10px] font-semibold text-slate-400 uppercase">10h 15m</span>
+              <div class="w-16 h-[2px] bg-slate-300 my-1 relative">
+                <i class="fa-solid fa-bus text-[10px] text-teal-600 absolute left-1/2 -top-1.5 -translate-x-1/2"></i>
+              </div>
+              <span class="text-[9px] text-slate-400 font-bold">1 Stopover</span>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-extrabold text-slate-900">08:45 PM</p>
+              <p class="text-[11px] font-medium text-slate-500">Abuja Terminus</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 text-slate-400 text-xs py-1 border-t border-slate-100">
+            <span title="Air Conditioned"><i class="fa-solid fa-snowflake text-teal-600"></i> AC</span>
+            <span title="USB Charging"><i class="fa-solid fa-plug text-teal-600"></i> USB</span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+          <div>
+            <span class="text-[11px] text-slate-400 uppercase block font-semibold">Economy Fare</span>
+            <span class="text-2xl font-black text-slate-900">₦18,500</span>
+          </div>
+          <button onclick="openSeatModal('Interstate Economy Shuttle (10:30 AM)', 18500)" class="bg-slate-900 hover:bg-teal-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition shadow-md">
+            Select Seats
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <div id="seat-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative animate-in fade-in zoom-in duration-200">
+      
+      <button onclick="closeSeatModal()" class="absolute top-6 right-6 w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="mb-6">
+        <h3 class="text-xl font-bold text-slate-900" id="modal-bus-name">Bus Seat Selection</h3>
+        <p class="text-xs text-slate-500">Select your preferred seat from the vehicle layout below.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        
+        <div class="bg-slate-100 p-6 rounded-2xl border border-slate-200 flex flex-col items-center">
+          <div class="w-full flex justify-between items-center text-xs font-bold text-slate-400 border-b border-slate-200 pb-2 mb-4 uppercase">
+            <span>Front</span>
+            <span><i class="fa-solid fa-dharmachakra text-slate-500"></i> Driver</span>
+          </div>
+
+          <div class="grid grid-cols-4 gap-3 w-full max-w-[240px]">
+            <button onclick="toggleSeat(this, 1)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">1</button>
+            <button onclick="toggleSeat(this, 2)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">2</button>
+            <button class="seat w-10 h-10 rounded-lg bg-slate-300 text-slate-400 font-bold text-xs flex items-center justify-center cursor-not-allowed booked" disabled>3</button>
+            <button onclick="toggleSeat(this, 4)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">4</button>
+
+            <button onclick="toggleSeat(this, 5)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">5</button>
+            <button onclick="toggleSeat(this, 6)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">6</button>
+            <button onclick="toggleSeat(this, 7)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">7</button>
+            <button onclick="toggleSeat(this, 8)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">8</button>
+
+            <button class="seat w-10 h-10 rounded-lg bg-slate-300 text-slate-400 font-bold text-xs flex items-center justify-center cursor-not-allowed booked" disabled>9</button>
+            <button onclick="toggleSeat(this, 10)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">10</button>
+            <button onclick="toggleSeat(this, 11)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">11</button>
+            <button onclick="toggleSeat(this, 12)" class="seat w-10 h-10 rounded-lg bg-white border-2 border-teal-500 text-teal-700 font-bold text-xs flex items-center justify-center">12</button>
+          </div>
+
+          <div class="flex items-center gap-4 mt-6 text-[11px] font-semibold text-slate-600">
+            <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded border border-teal-600 bg-white"></span> Available</div>
+            <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-teal-600"></span> Selected</div>
+            <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-slate-300"></span> Booked</div>
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-between h-full space-y-4">
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+            <div class="flex justify-between text-xs text-slate-500">
+              <span>Selected Seats:</span>
+              <span id="selected-seats-display" class="font-bold text-slate-900">None</span>
+            </div>
+            <div class="flex justify-between text-xs text-slate-500">
+              <span>Price per seat:</span>
+              <span id="modal-seat-price" class="font-bold text-slate-900">₦0</span>
+            </div>
+            <div class="border-t border-slate-200 pt-2 flex justify-between text-sm font-extrabold text-slate-900">
+              <span>Total Amount:</span>
+              <span id="modal-total-price" class="text-teal-700 text-lg">₦0</span>
+            </div>
+          </div>
+
+          <button onclick="confirmBooking()" id="pay-btn" disabled class="w-full bg-teal-600 disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-teal-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-teal-600/20">
+            Proceed to Checkout
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div id="ai-chat" class="fixed bottom-6 right-6 z-50">
+    <button onclick="toggleAiDrawer()" class="w-14 h-14 bg-gradient-to-tr from-slate-900 to-teal-800 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform">
+      <i class="fa-solid fa-sparkles text-amber-400 text-xl"></i>
+    </button>
+
+    <div id="ai-drawer" class="hidden absolute bottom-16 right-0 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-in fade-in slide-in-from-bottom-5">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs font-bold text-slate-900">TransitHub AI Assistant</span>
+        </div>
+        <button onclick="toggleAiDrawer()" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="py-4 text-xs text-slate-600 space-y-2 max-h-56 overflow-y-auto">
+        <p class="bg-teal-50 p-3 rounded-xl text-teal-900">
+          👋 Hello! I am your AI travel optimizer. Need advice on travel timings, weather conditions, or luggage limits?
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <input type="text" placeholder="Ask AI: e.g. Which bus has AC?" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500" />
+        <button class="bg-teal-600 text-white px-3 py-2 rounded-lg text-xs hover:bg-teal-700"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-slate-900 text-slate-400 py-10 border-t border-slate-800 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <p>&copy; 2026 TransitHub Technologies. All rights reserved.</p>
+      <div class="flex items-center gap-6">
+        <a href="#" class="hover:text-white transition">Privacy Policy</a>
+        <a href="#" class="hover:text-white transition">Terms of Service</a>
+        <a href="#" class="hover:text-white transition">Admin Portal</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Set default travel date to tomorrow
+    const dateInput = document.getElementById('travel-date');
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    dateInput.value = tomorrow.toISOString().split('T')[0];
+
+    // State
+    let currentBusFare = 0;
+    let selectedSeats = [];
+
+    // Search Handler
+    function handleSearch(e) {
+      e.preventDefault();
+      const origin = document.getElementById('origin').value;
+      const destination = document.getElementById('destination').value;
+      document.getElementById('route-indicator').innerText = `${origin} → ${destination}`;
+      alert(`AI Engine re-routed options for ${origin} to ${destination}`);
+    }
+
+    // Modal Control
+    function openSeatModal(busName, fare) {
+      currentBusFare = fare;
+      selectedSeats = [];
+      document.getElementById('modal-bus-name').innerText = busName;
+      document.getElementById('modal-seat-price').innerText = `₦${fare.toLocaleString()}`;
+      updateSummary();
+      
+      // Reset seat styles
+      document.querySelectorAll('.seat:not(.booked)').forEach(btn => {
+        btn.classList.remove('bg-teal-600', 'text-white');
+        btn.classList.add('bg-white', 'text-teal-700');
+      });
+
+      const modal = document.getElementById('seat-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSeatModal() {
+      const modal = document.getElementById('seat-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Seat Selection
+    function toggleSeat(button, seatNumber) {
+      if (selectedSeats.includes(seatNumber)) {
+        selectedSeats = selectedSeats.filter(s => s !== seatNumber);
+        button.classList.remove('bg-teal-600', 'text-white');
+        button.classList.add('bg-white', 'text-teal-700');
+      } else {
+        selectedSeats.push(seatNumber);
+        button.classList.add('bg-teal-600', 'text-white');
+        button.classList.remove('bg-white', 'text-teal-700');
+      }
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const display = document.getElementById('selected-seats-display');
+      const totalDisplay = document.getElementById('modal-total-price');
+      const payBtn = document.getElementById('pay-btn');
+
+      if (selectedSeats.length > 0) {
+        display.innerText = selectedSeats.sort((a,b) => a-b).join(', ');
+        const total = selectedSeats.length * currentBusFare;
+        totalDisplay.innerText = `₦${total.toLocaleString()}`;
+        payBtn.removeAttribute('disabled');
+      } else {
+        display.innerText = 'None';
+        totalDisplay.innerText = '₦0';
+        payBtn.setAttribute('disabled', 'true');
+      }
+    }
+
+    function confirmBooking() {
+      alert(`Booking initiated for Seats: ${selectedSeats.join(', ')}. Total: ${document.getElementById('modal-total-price').innerText}`);
+      closeSeatModal();
+    }
+
+    function toggleAiDrawer() {
+      const drawer = document.getElementById('ai-drawer');
+      drawer.classList.toggle('hidden');
+    }
+  </script>
+</body>
+</html>

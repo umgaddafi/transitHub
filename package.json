@@ -1,0 +1,15 @@
+{
+  "name": "transithub-monorepo",
+  "version": "1.0.0",
+  "description": "TransitHub - Smart Mobility and Bus Ticketing Platform (React Frontend + Laravel Backend)",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev -- --host 0.0.0.0",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview -- --host 0.0.0.0",
+    "server": "php -S 0.0.0.0:8000 -t backend/public",
+    "backend": "cd backend && php artisan serve --host=0.0.0.0 --port=8000",
+    "artisan": "php backend/artisan",
+    "deploy": "bash deploy.sh"
+  }
+}

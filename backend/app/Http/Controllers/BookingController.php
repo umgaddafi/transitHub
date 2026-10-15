@@ -108,12 +108,19 @@ class BookingController extends Controller
     public function search(Request $request, BookingService $booking)
     {
         $data = $request->validate([
-            'origin' => 'required|string|max:120', 'destination' => 'required|string|max:120|different:origin',
-            'date' => 'required|date_format:Y-m-d|after_or_equal:today', 'vehicle_type' => 'nullable|string|max:60',
+            'origin' => 'nullable|string|max:120',
+            'destination' => 'nullable|string|max:120',
+            'date' => 'required|date_format:Y-m-d|after_or_equal:today',
+            'vehicle_type' => 'nullable|string|max:60',
         ]);
+        if (!empty($data['origin']) && !empty($data['destination'])) {
+            abort_if(strcasecmp(trim($data['origin']), trim($data['destination'])) === 0, 422, 'Origin and destination cannot be identical.');
+        }
+
         $booking->expireHolds();
 
-        $normalizeCity = function (string $input) {
+        $normalizeCity = function (?string $input) {
+            if (!$input) return null;
             $raw = trim(explode('(', $input)[0]);
             $clean = trim(str_ireplace([' State', ' state'], '', $raw));
             $aliases = [
@@ -125,35 +132,76 @@ class BookingController extends Controller
             return $aliases[$clean] ?? $clean;
         };
 
-        $originCity = $normalizeCity($data['origin']);
-        $destCity = $normalizeCity($data['destination']);
+        $originCity = $normalizeCity($data['origin'] ?? null);
+        $destCity = $normalizeCity($data['destination'] ?? null);
 
-        $trips = Trip::with(['route', 'bus', 'tickets' => fn ($query) => $query->whereNotNull('active_seat')->select(['id', 'trip_id', 'active_seat'])])
-            ->where('status', 'Scheduled')->where('departure_time', '>', now()->format('Y-m-d H:i:s'))
-            ->whereDate('departure_time', $data['date'])
-            ->whereHas('route', function ($query) use ($data, $originCity, $destCity) {
-                $query->where(function ($q) use ($data, $originCity) {
+        $fetchTrips = function () use ($data, $originCity, $destCity) {
+            $query = Trip::with(['route', 'bus', 'tickets' => fn ($q) => $q->whereNotNull('active_seat')->select(['id', 'trip_id', 'active_seat'])])
+                ->whereIn('status', ['Scheduled', 'Boarding'])
+                ->where('departure_time', '>', now()->format('Y-m-d H:i:s'))
+                ->whereDate('departure_time', $data['date']);
+
+            if (!empty($originCity) && !empty($destCity)) {
+                $query->whereHas('route', function ($q) use ($data, $originCity, $destCity) {
+                    $q->where(function ($sub) use ($data, $originCity) {
+                        $sub->where('origin', $data['origin'])
+                            ->orWhere('origin', 'like', '%' . $originCity . '%');
+                    })->where(function ($sub) use ($data, $destCity) {
+                        $sub->where('destination', $data['destination'])
+                            ->orWhere('destination', 'like', '%' . $destCity . '%');
+                    });
+                });
+            } elseif (!empty($originCity)) {
+                $query->whereHas('route', function ($q) use ($data, $originCity) {
                     $q->where('origin', $data['origin'])
                       ->orWhere('origin', 'like', '%' . $originCity . '%');
-                })->where(function ($q) use ($data, $destCity) {
-                    $q->where('destination', $data['destination'])
-                      ->orWhere('destination', 'like', '%' . $destCity . '%');
                 });
-            })
-            ->whereHas('bus', function ($query) use ($data) {
-                $query->whereNotIn('status', ['Maintenance', 'Out of Service']);
+            }
+
+            $query->whereHas('bus', function ($q) use ($data) {
+                $q->whereNotIn('status', ['Maintenance', 'Out of Service']);
                 if (!empty($data['vehicle_type'])) {
-                    $query->where('vehicle_type', $data['vehicle_type']);
+                    $q->where('vehicle_type', $data['vehicle_type']);
                 }
-            })->orderBy('departure_time')->limit(100)->get();
+            });
+
+            return $query->orderBy('departure_time')->limit(100)->get();
+        };
+
+        $trips = $fetchTrips();
+
+        // If no scheduled trips found for this date, automatically ensure schedules are generated
+        if ($trips->isEmpty()) {
+            app(\App\Services\ScheduleService::class)->generateRollingSchedules(14);
+            $trips = $fetchTrips();
+        }
 
         return response()->json(['status' => 'success', 'results' => $trips->map(function ($trip) {
             $occupied = $trip->tickets->pluck('active_seat')->map(fn ($seat) => (int) $seat)->sort()->values()->all();
             $available = array_values(array_diff(range(1, $trip->bus->capacity), $occupied));
-            return ['trip_id' => $trip->id, 'origin' => $trip->route->origin, 'destination' => $trip->route->destination,
-                'departure_time' => $trip->departure_time->toIso8601String(), 'arrival_time' => $trip->arrival_time?->toIso8601String(),
-                'vehicle_type' => $trip->bus->vehicle_type, 'capacity' => $trip->bus->capacity,
-                'fare' => $trip->fare, 'seats_left' => count($available), 'occupied_seats' => $occupied, 'available_seats' => $available];
+            return [
+                'id' => $trip->id,
+                'trip_id' => $trip->id,
+                'origin' => $trip->route->origin,
+                'destination' => $trip->route->destination,
+                'departure_time' => $trip->departure_time->toIso8601String(),
+                'arrival_time' => $trip->arrival_time?->toIso8601String(),
+                'vehicle_type' => $trip->bus->vehicle_type,
+                'capacity' => $trip->bus->capacity,
+                'status' => $trip->status,
+                'bus' => [
+                    'id' => $trip->bus->id,
+                    'reg_number' => $trip->bus->reg_number,
+                    'registration_number' => $trip->bus->reg_number,
+                    'model' => $trip->bus->model,
+                    'vehicle_type' => $trip->bus->vehicle_type,
+                    'capacity' => $trip->bus->capacity,
+                ],
+                'fare' => $trip->fare,
+                'seats_left' => count($available),
+                'occupied_seats' => $occupied,
+                'available_seats' => $available,
+            ];
         })]);
     }
 
